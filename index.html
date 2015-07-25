@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>K2pdfopt NaCl module demo</title>
+  <style>
+    body {
+      font-family: sans-serif;
+    }
+
+    #controlpanel {
+      display: inline-block;
+      background-color: #E7EAF7;
+      padding: .5em;
+      margin: 0 1em 1em 0;
+    }
+
+    #resultpanel {
+      display: none
+    }
+
+    p {
+      -webkit-margin-after: 0;
+    }
+
+    .label {
+      font-weight: bold
+    }
+
+    .code, #args {
+      font-family: monospace;
+    }
+
+    .progressbox {
+      display: none;
+      background-color: #E7EAF7;
+      padding: .5em;
+      margin: 0 1em 1em 0;
+    }
+
+    .progressbar {
+      width: 20em;
+      height: 1.2em;
+      line-height: 1.2em;
+      text-align: center;
+      border: solid 2px #A1B38B;
+      background-color: #fff;
+      margin-top: .3em;
+    }
+
+    .progressbar > div {
+      background-color: #CEDEBB;
+      height: 100%;
+      width: 0;
+    }
+  </style>
+  <script>
+    naclModule = filesystem = null;
+    naclLoaded = downloadDone = false;
+    loadnaclprogressbar = downloadprogressbar = runprogressbar = null;
+
+    function setProgress(el, progress) {
+      el.style.width = (100*progress) + "%";
+      if (progress == 1) {
+        el.innerText = "done";
+      }
+    }
+
+    function onDomContentLoaded(evt) {
+      loadnaclprogressbar = document.getElementById("loadnaclprogress");
+      downloadprogressbar = document.getElementById("downloadprogress");
+      runprogressbar = document.getElementById("runprogress");
+      document.getElementById("startbtn").addEventListener('click', start, true);
+
+      // Wrap a <div> around the <embed> so that we can attach listeners
+      // before loading the module.
+      var listenerDiv = document.getElementById('listener');
+      listenerDiv.addEventListener('loadstart', onModuleLoadstart, true);
+      listenerDiv.addEventListener('progress', onModuleProgress, true);
+      listenerDiv.addEventListener('error', onModuleError, true);
+      listenerDiv.addEventListener('load', onModuleLoad, true);
+      listenerDiv.addEventListener('crash', onModuleCrash, true);
+      listenerDiv.addEventListener('message', onModuleMessage, true);
+
+      naclModule = document.createElement('embed');
+      naclModule.setAttribute('width', 0);
+      naclModule.setAttribute('height', 0);
+      naclModule.setAttribute('path', '.');
+      naclModule.setAttribute('src', 'pnacl/Release/k2pdfopt.nmf');
+      naclModule.setAttribute('type', 'application/x-pnacl');
+      listenerDiv.appendChild(naclModule);
+
+      requestAndClearFilesystem();
+    }
+
+    function requestAndClearFilesystem() {
+      webkitRequestFileSystem(
+        TEMPORARY, 5 * 1024 * 1024,
+        function(fs) {
+          filesystem = fs;
+          var dirreader = fs.root.createReader();
+
+          dirreader.readEntries(
+            function processEntries(entries) {
+              function deleteEntries() {
+                if (entries.length == 0) {
+                  dirreader.readEntries(processEntries);
+                } else {
+                  var entry = entries.pop();
+                  if (entry.isFile) {
+                    entry.remove(deleteEntries);
+                  } else if (entry.isDirectory) {
+                    entry.removeRecursively(deleteEntries);
+                  }
+                }
+              }
+
+              if (entries.length == 0) {
+                document.getElementById("startbtn").removeAttribute("disabled");
+              } else {
+                deleteEntries();
+              }
+            }
+          );
+        },
+        function(evt) {
+          console.log(evt);
+          alert("Unable to get HTML5 filesystem: " + evt.toString());
+        }
+      );
+    }
+
+    function onModuleLoadstart(evt) {
+      document.getElementById("loadnaclprogressbox").style.display = "inline-block"
+    }
+
+    function onModuleProgress(evt) {
+      if (evt.lengthComputable && evt.total>0) {
+        setProgress(loadnaclprogressbar, evt.loaded/evt.total);
+      }
+    }
+
+    function onModuleError(evt) {
+      console.log(evt);
+      alert("An error occured while trying to load PNaCl module: " + evt.toString());
+    }
+
+    function onModuleLoad(evt) {
+      setProgress(loadnaclprogressbar, 1);
+      naclLoaded = true;
+      runK2pdfoptIfReady();
+    }
+
+    function onModuleCrash(evt) {
+      console.log(evt);
+      alert("PNaCl module crashed: " + evt.toString());
+    }
+
+    function onModuleMessage(evt) {
+      if (evt.data && evt.data.category) {
+        if (evt.data.category == "status") {
+          console.log("STATUS: " + evt.data.msg);
+          if (evt.data.msg == "done") {
+            setProgress(runprogressbar, 1);
+            document.getElementById("resultpanel").style.display = "block";
+          }
+        } else if (evt.data.category == "progress") {
+          setProgress(runprogressbar, evt.data.current/(evt.data.total+1));
+        } else {
+          console.log(evt);
+        }
+      } else {
+        console.log(evt);
+      }
+    }
+
+    function start() {
+      filesystem.root.getFile(
+        "in.pdf", {create: true},
+        function(entry) {
+          var url = entry.toURL();
+          document.getElementById("inlink").setAttribute("href", url);
+          document.getElementById("outlink").setAttribute("href", url.replace(/in\.pdf$/, "out.pdf"));
+
+          entry.createWriter(function(writer) {
+            writer.onwriteend = function() {
+              console.log("writeend");
+              downloadDone = true;
+              runK2pdfoptIfReady();
+            };
+
+            writer.onerror = function(evt) {
+              console.log(evt);
+              alert("Error writing to HTML5 filesystem: " + evt.toString());
+            };
+
+            document.getElementById("downloadprogressbox").style.display = "inline-block"
+            req = new XMLHttpRequest();
+            req.responseType = "blob";
+            req.addEventListener("load", function() {
+              setProgress(downloadprogressbar, 1);
+              writer.write(req.response);
+            }, false);
+            req.addEventListener("progress", function(evt) {
+              if (evt.lengthComputable && evt.total>0) {
+                setProgress(downloadprogressbar, evt.loaded/evt.total);
+              }
+            }, false);
+            req.open("GET", document.getElementById("pdfurl").value);
+            req.send();
+          });
+        }
+      );
+    }
+
+    function runK2pdfoptIfReady() {
+      if (naclLoaded && downloadDone) {
+        document.getElementById("runprogressbox").style.display = "inline-block";
+        var argsstring = document.getElementById("args").value.trim();
+        var argv = argsstring == "" ? [] : argsstring.split(/\s+/);
+        naclModule.postMessage({
+          "cmd": "k2pdfopt",
+          "args": ['-a-', '-o', '/temporary/out.pdf', '/temporary/in.pdf'].concat(argv)
+        });
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', onDomContentLoaded);
+  </script>
+</head>
+<body>
+  <div id="listener"></div>
+
+  <h1>K2pdfopt Native Client module demo</h1>
+
+  <div id="controlpanel">
+      <div class="label">Enter URL of an article you would like to run through k2pdfopt:</div>
+      <input type="url" id="pdfurl" size="50" value="http://arxiv.org/pdf/1204.0162v2.pdf">
+    <p>
+      <div class="label">Command line arguments for k2pdfopt:</div>
+      <div class="code">-ui- -x -o /temporary/out.pdf /temporary/in.pdf <input type="text" id="args" size="30" value="-p 1- -om 0 -w 718 -h 963 -odpi 212 -ml 0.51 -mt 0.86 -mr 0.20 -mb 0.96"></div>
+    <p>
+      <button id="startbtn" disabled>Start</button>
+  </div>
+
+  <p>
+    <div class="progressbox" id="loadnaclprogressbox">
+      Loading Native Client module...
+      <div class="progressbar"><div id="loadnaclprogress">&nbsp;</div></div>
+    </div>
+
+    <div class="progressbox" id="downloadprogressbox">
+      Downloading article...
+      <div class="progressbar"><div id="downloadprogress">&nbsp;</div></div>
+    </div>
+
+    <div class="progressbox" id="runprogressbox">
+      Running k2pdfopt...
+      <div class="progressbar"><div id="runprogress">&nbsp;</div></div>
+    </div>
+  </p>
+
+  <div id="resultpanel">
+    <h2>Done</h2>
+
+    <strong>View original PDF file:</strong> <a id="inlink" target="_blank">in.pdf</a>
+    <p>
+    <strong>View PDF file generated by k2pdfopt:</strong> <a id="outlink" target="_blank">out.pdf</a>
+  </div>
+</body>
+</html>
