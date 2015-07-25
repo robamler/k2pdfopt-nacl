@@ -32,7 +32,7 @@ static void ocrword_fillin_mupdf_info(OCRWORD *word,BMPREGION *region);
 #endif
 
 /* Functions to support extracting text from PDF using MuPDF lib */
-#ifdef HAVE_MUPDF_LIB
+#if (defined(HAVE_MUPDF_LIB) && defined(HAVE_OCR_LIB))
 static void k2ocr_ocrwords_get_from_ocrlayer(MASTERINFO *masterinfo,OCRWORDS *words,
                                              BMPREGION *region,K2PDFOPT_SETTINGS *k2settings);
 static int ocrword_map_to_bitmap(OCRWORD *word,MASTERINFO *masterinfo,BMPREGION *region,
@@ -468,7 +468,7 @@ printf("Word: (%5.1f,%5.1f) = %5.1f x %5.1f (page %2d)\n",word->x0,word->y0,word
 ** In a contiguous rectangular region that is mapped to the PDF source file,
 ** find rows of text assuming a single column of text.
 */
-#if (defined(HAVE_MUPDF_LIB))
+#if (defined(HAVE_MUPDF_LIB) && defined(HAVE_OCR_LIB))
 static void k2ocr_ocrwords_get_from_ocrlayer(MASTERINFO *masterinfo,OCRWORDS *dwords,
                                              BMPREGION *region,K2PDFOPT_SETTINGS *k2settings)
 
@@ -789,12 +789,15 @@ static void wtextchars_group_by_words(WTEXTCHARS *wtcs,OCRWORDS *words,
 
     {
     double vert_spacing_threshold;
+#ifdef HAVE_OCR_LIB
     static char *funcname="wtextchars_group_by_words";
+#endif
     int i,i0;
 
     if (wtcs->n<=0)
         return;    
     /* Manually sort characters in OCR layer */
+#ifdef HAVE_OCR_LIB
     if (k2settings->dst_ocr_visibility_flags&32)
         {
         double *ch; /* population of character heights */
@@ -811,6 +814,9 @@ static void wtextchars_group_by_words(WTEXTCHARS *wtcs,OCRWORDS *words,
         }
     else
         vert_spacing_threshold=-1;
+#else
+        vert_spacing_threshold=-1;
+#endif
     /* Group characters row by row and add one row at a time */
     for (i0=0,i=1;i<wtcs->n;i++)
         {

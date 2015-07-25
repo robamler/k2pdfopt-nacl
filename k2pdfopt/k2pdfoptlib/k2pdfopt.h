@@ -80,7 +80,6 @@
 **
 ** Undefine HAVE_MUPDF_LIB if no MuPDF (must have Ghostscript in this case)
 */
-/*
 #ifdef HAVE_GOCR_LIB
 #undef HAVE_GOCR_LIB
 #endif
@@ -90,7 +89,7 @@
 #ifdef HAVE_DJVU_LIB
 #undef HAVE_DJVU_LIB
 #endif
-#ifdef HAVE_MUPDF_LIB
+/*#ifdef HAVE_MUPDF_LIB
 #undef HAVE_MUPDF_LIB
 #endif
 */
