@@ -117,8 +117,7 @@ fz_load_jpx(fz_context *ctx, unsigned char *data, int size, fz_colorspace *defcs
 	opj_stream_set_read_function(stream, fz_opj_stream_read);
 	opj_stream_set_skip_function(stream, fz_opj_stream_skip);
 	opj_stream_set_seek_function(stream, fz_opj_stream_seek);
-    /* willus mod for OpenJPEG v2.1.0 -- add NULL argument */
-	opj_stream_set_user_data(stream, &sb, NULL);
+	opj_stream_set_user_data(stream, &sb);
 	/* Set the length to avoid an assert */
 	opj_stream_set_user_data_length(stream, size);
 
