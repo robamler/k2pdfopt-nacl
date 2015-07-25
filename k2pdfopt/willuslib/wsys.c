@@ -282,7 +282,7 @@ int wsys_wpid_status(int pid)
     return(WPID_NO_PROCESS);
     */
 #else
-#ifdef UNIX
+#if (defined(UNIX) && !defined(__NACL__))
     int status;
     status = getpgid(pid);
     if (status < 0 && errno==ESRCH)

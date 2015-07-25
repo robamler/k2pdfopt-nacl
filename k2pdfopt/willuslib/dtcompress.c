@@ -97,7 +97,9 @@ compress_handle compress_start(FILE *f,int level)
 
 /*
 ** In: strm out empty, next_in and avail_in set 
-** Out:Return negative value on error, else bytes written.
+** Out:Return Z_ERRNO on error, else bytes written.
+**     (original code tried to return negative value on error,
+*       but size_t is usually unsigned)
 */
 static size_t compress_out(FILE *f,compress_handle_p h,int flush) 
 
@@ -184,7 +186,7 @@ size_t compress_write(FILE *f,compress_handle hh,const void *buf,size_t size)
             h->strm.avail_in += n;
             if (h->strm.avail_in >= COMPRESS_CHUNK)
                 {
-                if (compress_out(f,h,Z_NO_FLUSH) < 0) 
+                if (compress_out(f,h,Z_NO_FLUSH) == Z_ERRNO)
                     {
                     /* ERROR; */
                     return Z_ERRNO;

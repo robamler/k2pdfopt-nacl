@@ -21,6 +21,10 @@
 
 #include "k2pdfopt.h"
 
+#ifdef __NACL__
+#include "../k2pdfopt_module.h"
+#endif
+
 static int k2files_overwrite=0;
 
 static void   k2pdfopt_proc_arg(K2PDFOPT_SETTINGS *k2settings,char *arg,int process,
@@ -570,9 +574,19 @@ printf("@k2pdfopt_proc_one(filename='%s', rot_deg=%g, preview_bitmap=%p)\n",file
         if (pagecount>0)
            {
            if (pagecount<np)
+               {
+#ifdef __NACL__
+               pp_post_progress(0,pagecount);
+#endif
                k2printf("%d out of %d %s%s",pagecount,np,folder?"file":"page",np>1?"s":"");
+               }
            else
+               {
+#ifdef __NACL__
+               pp_post_progress(0,np);
+#endif
                k2printf("%d %s%s",np,folder?"file":"page",np>1?"s":"");
+               }
            }
         else
            k2printf("%ss",folder?"file":"page");
@@ -702,7 +716,12 @@ willus_mem_debug_update(bmpfile);
             if (!preview)
                 {
                 if (k2settings->pagelist[0]!='\0')
+                    {
+#ifdef __NACL__
+                    pp_post_progress(pages_done+1,pagecount);
+#endif
                     k2printf(" (%d of %d)",pages_done+1,pagecount);
+                    }
                 else
                     k2printf(" of %d",pagecount);
                 }

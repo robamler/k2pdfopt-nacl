@@ -1,0 +1,4 @@
+*.o
+*.a
+/pnacl
+/k2pdfopt/willuslib/pnacl/
