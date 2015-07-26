@@ -130,7 +130,7 @@
     }
 
     function onModuleLoadstart(evt) {
-      document.getElementById("loadnaclprogressbox").style.display = "inline-block"
+      document.getElementById("loadnaclprogressbox").style.display = "inline-block";
     }
 
     function onModuleProgress(evt) {
@@ -193,7 +193,7 @@
               alert("Error writing to HTML5 filesystem: " + evt.toString());
             };
 
-            document.getElementById("downloadprogressbox").style.display = "inline-block"
+            document.getElementById("downloadprogressbox").style.display = "inline-block";
             req = new XMLHttpRequest();
             req.responseType = "blob";
             req.addEventListener("load", function() {
