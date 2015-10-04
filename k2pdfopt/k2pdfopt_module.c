@@ -134,7 +134,7 @@ static struct PP_Var VprintfToVar(const char* format, va_list args) {
  * @param[in] var The PP_Var to convert.
  * @return A newly allocated, NULL-terminated string.
  */
-static const char* VarToCStr(struct PP_Var var) {
+static char* VarToCStr(struct PP_Var var) {
   uint32_t length;
   const char* str = g_ppb_var->VarToUtf8(var, &length);
   if (str == NULL) {
@@ -267,21 +267,23 @@ int pp_post_progress(int current_page, int page_count) {
  * @return 0 if successful, otherwise 1.
  */
 static int ParseMessage(struct PP_Var message,
-                        const char** out_function,
+                        char** out_function,
                         struct PP_Var* out_params) {
   if (message.type != PP_VARTYPE_DICTIONARY) {
     return 1;
   }
 
   struct PP_Var cmd_value = GetDictVar(message, "cmd");
-  *out_function = VarToCStr(cmd_value);
-  g_ppb_var->Release(cmd_value);
   if (cmd_value.type != PP_VARTYPE_STRING) {
+    g_ppb_var->Release(cmd_value);
     return 1;
   }
+  *out_function = VarToCStr(cmd_value);
+  g_ppb_var->Release(cmd_value);
 
   *out_params = GetDictVar(message, "args");
   if (out_params->type != PP_VARTYPE_ARRAY) {
+    g_ppb_var->Release(*out_params);
     return 1;
   }
 
@@ -297,7 +299,7 @@ static int ParseMessage(struct PP_Var message,
 static void HandleMessage(struct PP_Var message) {
   pp_post_message("debug", "Received a message.");
 
-  const char* command;
+  char* command;
   struct PP_Var params;
   if (ParseMessage(message, &command, &params)) {
     pp_post_message("error", "Unable to parse message.");
@@ -305,32 +307,32 @@ static void HandleMessage(struct PP_Var message) {
   }
 
   if (!strcmp(command, "k2pdfopt")) {
-    const char *val;
-    int totallen = strlen(command)+1;
     pp_post_message("debug", "Received k2pdfopt command.");
 
     int numargs = g_ppb_var_array->GetLength(params);
     int argc = numargs + 1;
     char **argv;
     argv = malloc(argc * sizeof(char*));
-    argv[0] = malloc((strlen(command)+1) * sizeof(char));
-    strcpy(argv[0], command);
+    argv[0] = command;
+
     for (int i=0; i<numargs; i++) {
-      val = VarToCStr(g_ppb_var_array->Get(params, i));
-      totallen += strlen(val) + 1;
-      argv[i+1] = malloc((strlen(val)+1) * sizeof(char));
-      strcpy(argv[i+1], val);
+      struct PP_Var argvar = g_ppb_var_array->Get(params, i);
+      argv[i+1] = VarToCStr(argvar);
+      g_ppb_var->Release(argvar);
     }
 
     pp_post_message("status", "start");
     k2pdfoptmain(numargs+1, argv);
     pp_post_message("status", "done");
 
-    for (int i=0; i<numargs+1; i++) {
-        free(argv[i]);
+    // Fre argv[1...numargs+1]; argv[0] will be freed below by calling free(command)
+    for (int i=1; i<numargs+1; i++) {
+      free(argv[i]);
     }
     free(argv);
   }
+
+  free(command);
 }
 
 

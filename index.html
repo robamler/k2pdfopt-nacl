@@ -165,8 +165,10 @@
           }
         } else if (evt.data.category == "progress") {
           setProgress(runprogressbar, evt.data.current/(evt.data.total+1));
+        } else if (evt.data.category == "debug") {
+          console.log("Debug message: " + evt.data.msg);
         } else {
-          console.log(evt);
+          console.log(evt.data);
         }
       } else {
         console.log(evt);
@@ -194,7 +196,7 @@
             };
 
             document.getElementById("downloadprogressbox").style.display = "inline-block";
-            req = new XMLHttpRequest();
+            var req = new XMLHttpRequest();
             req.responseType = "blob";
             req.addEventListener("load", function() {
               setProgress(downloadprogressbar, 1);
