@@ -2617,6 +2617,7 @@ printf("    control->handle=%p\n",control->handle);
         control->rect.left = x1;
         control->rect.top = y1;
         control->rect.right = x1 + h*5;
+        control->rect.bottom = y1+h-1;
         control->type=WILLUSGUICONTROL_TYPE_UPDOWN2;
         control->parent=&k2gui->mainwin;
         strcpy(control->label,ppname);
@@ -3374,6 +3375,14 @@ aprintf(ANSI_YELLOW "\nCHILDREN REDRAWN.  ncontrols=%d.\n" ANSI_NORMAL,k2gui->nc
              || focus_control->type == WILLUSGUICONTROL_TYPE_UPDOWN2)
             willusgui_control_text_select_all(focus_control);
         }
+/*
+printf("Done drawing controls.  ncontrols=%d\n",k2gui->ncontrols);
+{
+int i;
+for (i=0;i<k2gui->ncontrols;i++)
+printf("index[%03d]= %-20s %03d\n",i,k2gui->control[i].name,k2gui->control[i].index);
+}
+*/
     }
 
 

@@ -1,4 +1,4 @@
-char *k2pdfopt_version = "v2.33";
+char *k2pdfopt_version = "v2.33a";
 /*
 ** k2version.c  K2pdfopt version number and history.
 **
@@ -19,7 +19,11 @@ char *k2pdfopt_version = "v2.33";
 **
 ** VERSION HISTORY
 **
-** v2.33 27 SEP 2015
+** V2.33a 3 OCT 2015
+**           BUG FIX
+**           - Fixed MS Windows GUI bug where preview page controls were missing.
+**
+** V2.33 27 SEP 2015
 **           NEW FEATURES
 **           - Compiled with GCC v5.2.0 and MuPDF v1.7a (released May 7, 2015).
 **             The MuPDF upgrade involved modifying a significant amount of the
