@@ -54,6 +54,7 @@ SOURCES = ansi.c \
   winmbox.c \
   winshell.c \
   wmupdf.c \
+  wmupdfinfo.c \
   wpdf.c \
   wsys.c \
   wzfile.c
