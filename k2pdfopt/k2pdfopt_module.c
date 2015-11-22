@@ -52,6 +52,7 @@
 
 #include "k2pdfopt_module.h"
 #include "k2pdfopt_nacl.h"
+#include "k2pdfopt.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -342,6 +343,12 @@ static void HandleMessage(struct PP_Var message) {
  * @return unused.
  */
 void* HandleMessageThread(void* user_data) {
+  extern char *k2pdfopt_version;
+  char* buf = (char*) malloc(50);
+  sprintf(buf, "k2pdfopt version %s", k2pdfopt_version);
+  pp_post_message("debug", buf);
+  free(buf);
+
   while (1) {
     struct PP_Var message = DequeueMessage();
     HandleMessage(message);
