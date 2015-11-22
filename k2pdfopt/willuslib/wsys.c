@@ -543,7 +543,7 @@ int wsys_set_envvar(char *varname,char *value,int system)
     if (value[0]=='\0')
         {
         estr=getenv(varname);
-        if (estr==NULL);
+        if (estr==NULL)
             assign=0;
         }
     if (assign)
